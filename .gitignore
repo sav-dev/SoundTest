@@ -1,0 +1,9 @@
+*.fns
+*.nes
+*.nes.deb
+*.sav
+ft_txt_to_asm.py
+ggsound.asm
+ggsound.inc
+ggsound_ram.inc
+ggsound_zp.inc

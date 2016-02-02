@@ -13,10 +13,20 @@
     
   .include "ggsound.inc"
 
+CONTROLLER_A            = %10000000
+CONTROLLER_B            = %01000000
+CONTROLLER_SEL          = %00100000
+CONTROLLER_START        = %00010000
+CONTROLLER_UP           = %00001000
+CONTROLLER_DOWN         = %00000100
+CONTROLLER_LEFT         = %00000010
+CONTROLLER_RIGHT        = %00000001
+  
   .rsset $0000
   .include "ggsound_zp.inc"
   
 b                   .rs 1 
+c                   .rs 1 
 controllerDown      .rs 1 
 controllerPressed   .rs 1 
 controllerPrevious  .rs 1 
@@ -80,6 +90,10 @@ initSoundEngine:
   STA sound_param_word_1 + $01
   JSR sound_initialize
   
+  LDA #song_index_song_none
+  STA sound_param_byte_0
+  JSR play_song            ; play song "none"
+  
 initPPU:
   LDA #%00000110           ; init PPU - disable sprites and background
   STA $2001                
@@ -92,6 +106,31 @@ initPPU:
 
 GameLoop:  
   JSR ReadController
+
+  LDA #$01
+  STA b
+ 
+  LDA #$00
+  STA c
+ 
+  .loop:
+    LDA controllerPressed
+    AND b
+    BEQ .checkNext
+    
+    LDX c
+    LDA sfxMappings, x
+    STA sound_param_byte_0
+    LDA #soundeffect_one
+    STA sound_param_byte_1
+    JSR play_sfx
+    JMP GameLoopDone
+    
+    .checkNext:
+      INC c
+      ASL b
+      BEQ GameLoopDone
+      JMP .loop
   
 GameLoopDone:               
   JSR WaitForFrame          ; always wait for a frame at the end of the loop iteration
@@ -168,16 +207,6 @@ ReadController:
       ROL b                   ; store the buttons in b for now
       DEX
       BNE .loop
-    
-    ; We "NOT" the previous state of controllers, and "AND" it with the current one
-    ; to get the list of buttons pressed since the last time ReadController was called.
-    ;
-    ; E.g. if previously this was the state of controllers: 11000110
-    ; And this is the current one: 10001001
-    ; This is what will happen:
-    ;
-    ;   NOT(11000110) = 00111001
-    ;   00111001 AND 10001001 = 00001001
      
     LDA #$FF
     EOR controllerDown        ; NOT previous state of controllers

@@ -1,0 +1,220 @@
+;****************************************************************
+; iNES headers                                                  ;
+;****************************************************************
+
+  .inesprg 2  ; 2x 16KB PRG code (banks 0-3)
+  .ineschr 1  ; 1x  8KB CHR data (bank 4)
+  .inesmap 0  ; mapper 0 = NROM, no bank swapping
+  .inesmir 0  ; horizontal mirroring (doesn't matter)
+  
+;****************************************************************
+; Includes                                                     ;
+;****************************************************************
+    
+  .include "ggsound.inc"
+
+  .rsset $0000
+  .include "ggsound_zp.inc"
+  
+b                   .rs 1 
+controllerDown      .rs 1 
+controllerPressed   .rs 1 
+controllerPrevious  .rs 1 
+sleeping            .rs 1 
+  
+  .rsset $0400
+  .include "ggsound_ram.inc" 
+  
+;****************************************************************
+; RESET handler                                                 ;
+;****************************************************************
+
+  .bank 2
+  .org $C000 
+RESET:
+  SEI               ; disable IRQs
+  CLD               ; disable decimal mode
+  LDX #$40          
+  STX $4017         ; disable APU frame IRQ
+  LDX #$FF          
+  TXS               ; Set up stack
+  INX               ; now X = 0
+  STX $2000         ; disable NMI
+  STX $2001         ; disable rendering
+  STX $4010         ; disable DMC IRQs
+                    
+vblankwait1:        ; First wait for vblank to make sure PPU is ready
+  BIT $2002         
+  BPL vblankwait1   
+                    
+clrmem:             
+  LDA #$00          
+  STA $0000, x      
+  STA $0100, x      
+  STA $0300, x      
+  STA $0400, x      
+  STA $0500, x      
+  STA $0600, x      
+  STA $0700, x      
+  INX
+  BNE clrmem        
+     
+vblankwait2:        ; Second wait for vblank, PPU is ready after this
+  BIT $2002              
+  BPL vblankwait2
+  
+;****************************************************************
+; Initialization logic                                          ;
+;****************************************************************
+  
+initSoundEngine:  
+  LDA #SOUND_REGION_NTSC
+  STA sound_param_byte_0
+  LDA #LOW(song_list)
+  STA sound_param_word_0
+  LDA #HIGH(song_list)
+  STA sound_param_word_0 + $01
+  LDA #LOW(sfx_list)
+  STA sound_param_word_1
+  LDA #HIGH(sfx_list)
+  STA sound_param_word_1 + $01
+  JSR sound_initialize
+  
+initPPU:
+  LDA #%00000110           ; init PPU - disable sprites and background
+  STA $2001                
+  LDA #%10010000           ; enable NMI
+  STA $2000                
+  
+;****************************************************************
+; Game loop                                                     ;
+;****************************************************************
+
+GameLoop:  
+  JSR ReadController
+  
+GameLoopDone:               
+  JSR WaitForFrame          ; always wait for a frame at the end of the loop iteration
+  JMP GameLoop
+  
+;****************************************************************
+; NMI handler                                                   ;
+;****************************************************************
+
+NMI:
+  PHA                       ; back up registers
+  TXA                       
+  PHA                       
+  TYA                       
+  PHA                       
+                                                         
+  soundengine_update
+     
+  LDA #$00
+  STA sleeping
+     
+  PLA                       ; restore regs and exit
+  TAY                       
+  PLA
+  TAX
+  PLA
+  RTI
+
+  RTI
+  
+;****************************************************************
+; Global subroutines                                            ;
+;****************************************************************
+
+;****************************************************************
+; Name:                                                         ;
+;   WaitForFrame                                                ;
+;                                                               ;
+; Description:                                                  ;
+;   Wait for NMI to happen, then exit                           ;
+;****************************************************************
+
+WaitForFrame
+  INC sleeping
+  .loop:
+    LDA sleeping
+    BNE .loop
+  RTS
+
+;****************************************************************
+; Name:                                                         ;
+;   ReadController                                              ;
+;                                                               ;
+; Description:                                                  ;
+;   Reads the state of the first controller                     ;
+;                                                               ;
+; Variables used:                                               ;
+;  b                                                            ;
+;****************************************************************
+
+ReadController:
+ 
+  .readController:
+  
+    LDA #$01
+    STA $4016
+    LDA #$00
+    STA $4016                 ; latch buttons
+    LDX #$08                  ; read 8 buttons for player 1
+                              
+    .loop:                    
+      LDA $4016               
+      LSR A                   
+      ROL b                   ; store the buttons in b for now
+      DEX
+      BNE .loop
+    
+    ; We "NOT" the previous state of controllers, and "AND" it with the current one
+    ; to get the list of buttons pressed since the last time ReadController was called.
+    ;
+    ; E.g. if previously this was the state of controllers: 11000110
+    ; And this is the current one: 10001001
+    ; This is what will happen:
+    ;
+    ;   NOT(11000110) = 00111001
+    ;   00111001 AND 10001001 = 00001001
+     
+    LDA #$FF
+    EOR controllerDown        ; NOT previous state of controllers
+    AND b                     ; AND with the current state
+    STA controllerPressed     ; store that as controllerPressed
+    LDA controllerDown        ; load previous state of controllers
+    STA controllerPrevious    ; store that in controllerPrevious
+    LDA b                     ; load the placeholder
+    STA controllerDown        ; finally, store that as current state of controllers
+    
+  .readControllerDone:  
+  
+  RTS
+  
+;****************************************************************
+; Modules import                                                ;
+;****************************************************************
+  
+  .bank 3
+  .org $E000
+
+  .include "soundMapping.asm"
+  .include "ggsound.asm"  
+  .include "sound.asm" 
+  
+  .bank 0
+  .org $8000
+    
+  .bank 1
+  .org $A000
+
+;****************************************************************
+; Vectors                                                       ;
+;****************************************************************
+
+  .bank 3
+  .org $FFFA  ; vectors starts here
+  .dw NMI     ; when an NMI happens (once per frame if enabled) the processor will jump to the label NMI:
+  .dw RESET   ; when the processor first turns on or is reset, it will jump to the label RESET:
+  .dw 0       ; external interrupt IRQ is not used

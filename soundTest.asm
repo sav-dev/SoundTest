@@ -31,6 +31,7 @@ controllerDown      .rs 1
 controllerPressed   .rs 1 
 controllerPrevious  .rs 1 
 sleeping            .rs 1 
+currentSong         .rs 1
   
   .rsset $0400
   .include "ggsound_ram.inc" 
@@ -92,6 +93,7 @@ initSoundEngine:
   
   LDA #song_index_song_none
   STA sound_param_byte_0
+  STA currentSong          ; song "none" must be the last one
   JSR play_song            ; play song "none"
   
 initPPU:
@@ -105,35 +107,73 @@ initPPU:
 ;****************************************************************
 
 GameLoop:  
-  JSR ReadController
 
-  LDA #$01
-  STA b
+  JSR ReadController
  
-  LDA #$00
-  STA c
- 
-  .loop:
+  .playSounds:
+
+    LDA #$01
+    STA b
+    
+    LDA #$00
+    STA c
+  
+    .playSoundsLoop:
+      LDA controllerPressed
+      BEQ .playSoundsDone
+      AND b
+      BEQ .checkNext
+      
+      LDX c
+      LDA sfxMappings, x
+      CMP #SFX_NONE
+      BEQ .checkNext
+      STA sound_param_byte_0
+      LDA #soundeffect_one
+      STA sound_param_byte_1
+      JSR play_sfx
+      JMP .playSoundsDone
+      
+      .checkNext:
+        INC c
+        ASL b
+        LDA b      
+        BEQ .playSoundsDone
+        CMP #CONTROLLER_SEL
+        BNE .playSoundsLoop
+        INC c        
+        ASL b                 ; skip select
+        JMP .playSoundsLoop
+  
+  .playSoundsDone:
+  
+  .changeMusic:
+  
     LDA controllerPressed
-    AND b
-    BEQ .checkNext
+    AND #CONTROLLER_SEL
+    BEQ .changeMusicDone
     
-    LDX c
-    LDA sfxMappings, x
-    STA sound_param_byte_0
-    LDA #soundeffect_one
-    STA sound_param_byte_1
-    JSR play_sfx
-    JMP GameLoopDone
+    LDA currentSong
+    CMP #song_index_song_none
+    BEQ .wrapSong
     
-    .checkNext:
-      INC c
-      ASL b
-      BEQ GameLoopDone
-      JMP .loop
+    .incSong:
+      INC currentSong
+      JMP .changeSong
+    
+    .wrapSong:  
+      LDA #$00
+      STA currentSong
+    
+    .changeSong:
+      LDA currentSong
+      STA sound_param_byte_0
+      JSR play_song    
+    
+  .changeMusicDone:
   
 GameLoopDone:               
-  JSR WaitForFrame          ; always wait for a frame at the end of the loop iteration
+  JSR WaitForFrame            ; always wait for a frame at the end of the loop iteration
   JMP GameLoop
   
 ;****************************************************************

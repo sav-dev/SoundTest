@@ -45,7 +45,7 @@ volume0:
 volume1:
   .db 12,12,12,12,12,12,12,12,ENV_STOP
 volume2:
-  .db 3,ENV_STOP
+  .db 8,ENV_STOP
 volume3:
   .db 12,12,12,12,0,ENV_STOP
 volume4:
@@ -67,7 +67,7 @@ duty0:
 duty1:
   .db 64,0,0,DUTY_ENV_STOP
 duty2:
-  .db 128,64,DUTY_ENV_STOP
+  .db 64,0,DUTY_ENV_STOP
 duty3:
   .db 0,DUTY_ENV_STOP
 
@@ -105,19 +105,19 @@ laser_noise:
   .dw laser_noise
 
 laser_square1_0:
-  .db STV,8,STP,0,SDU,3,SLL,64,A0
+  .db STV,8,STP,0,SDU,3,SL2,A0
   .db RET
 
 laser_square2_0:
-  .db STV,8,STP,0,SDU,3,SLL,64,A0
+  .db STV,2,SDU,2,STP,0,SL1,A1,B1
   .db RET
 
 laser_triangle_0:
-  .db STV,8,STP,0,SDU,3,SLL,64,A0
+  .db STV,8,STP,0,SDU,3,SL2,A0
   .db RET
 
 laser_noise_0:
-  .db STV,2,SDU,2,STP,0,SLL,64,4
+  .db STV,8,STP,0,SDU,3,SL2,A0
   .db RET
 
 editor_song:

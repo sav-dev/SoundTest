@@ -11,7 +11,7 @@
 ; Includes                                                     ;
 ;****************************************************************
     
-  .include "ggsound.inc"
+  .include "ggsound\ggsound.inc"
 
 CONTROLLER_A            = %10000000
 CONTROLLER_B            = %01000000
@@ -23,7 +23,7 @@ CONTROLLER_LEFT         = %00000010
 CONTROLLER_RIGHT        = %00000001
   
   .rsset $0000
-  .include "ggsound_zp.inc"
+  .include "ggsound\ggsound_zp.inc"
   
 b                   .rs 1 
 c                   .rs 1 
@@ -34,7 +34,7 @@ sleeping            .rs 1
 currentSong         .rs 1
   
   .rsset $0400
-  .include "ggsound_ram.inc" 
+  .include "ggsound\ggsound_ram.inc" 
   
 ;****************************************************************
 ; RESET handler                                                 ;
@@ -268,9 +268,9 @@ ReadController:
   .bank 3
   .org $E000
 
-  .include "soundMapping.asm"
-  .include "ggsound.asm"  
-  .include "sound.asm" 
+  .include "lib\soundMapping.asm"
+  .include "ggsound\ggsound.asm"  
+  .include "ggsound\sound.asm" 
   
   .bank 0
   .org $8000

@@ -8,6 +8,6 @@ sfxMappings:
   .byte sfx_index_sfx_keycard             ; CONTROLLER_UP           = %00001000
   .byte sfx_index_sfx_blinker             ; CONTROLLER_START        = %00010000
   .byte SFX_NONE_SEL                      ; CONTROLLER_SEL          = %00100000 <- this changes songs so must always be SFX_NONE_SEL
-  .byte SFX_NONE                          ; CONTROLLER_B            = %01000000
+  .byte sfx_index_sfx_shot_player         ; CONTROLLER_B            = %01000000
   .byte SFX_NONE                          ; CONTROLLER_A            = %10000000
   

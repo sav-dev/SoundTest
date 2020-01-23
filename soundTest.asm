@@ -35,7 +35,7 @@ currentSong         .rs 1
   
   .rsset $0400
   .include "ggsound\ggsound_ram.inc" 
-  
+
 ;****************************************************************
 ; RESET handler                                                 ;
 ;****************************************************************
@@ -79,23 +79,23 @@ vblankwait2:        ; Second wait for vblank, PPU is ready after this
 ;****************************************************************
   
 initSoundEngine:  
+InitializeSound:
   LDA #SOUND_REGION_NTSC
-  STA sound_param_byte_0
+  STA <sound_param_byte_0
   LDA #LOW(song_list)
-  STA sound_param_word_0
+  STA <sound_param_word_0
   LDA #HIGH(song_list)
-  STA sound_param_word_0 + $01
+  STA <sound_param_word_0 + $01
   LDA #LOW(sfx_list)
-  STA sound_param_word_1
+  STA <sound_param_word_1
   LDA #HIGH(sfx_list)
-  STA sound_param_word_1 + $01
+  STA <sound_param_word_1 + $01
+  LDA #LOW(envelopes_list)
+  STA <sound_param_word_2
+  LDA #HIGH(envelopes_list)
+  STA <sound_param_word_2 + $01
   JSR sound_initialize
-  
-  LDA #song_index_song_none
-  STA sound_param_byte_0
-  STA currentSong          ; song "none" must be the last one
-  JSR play_song            ; play song "none"
-  
+
 initPPU:
   LDA #%00000110           ; init PPU - disable sprites and background
   STA $2001                
@@ -153,22 +153,22 @@ GameLoop:
     AND #CONTROLLER_SEL
     BEQ .changeMusicDone
     
-    LDA currentSong
-    CMP #song_index_song_none
-    BEQ .wrapSong
-    
-    .incSong:
-      INC currentSong
-      JMP .changeSong
-    
-    .wrapSong:  
-      LDA #$00
-      STA currentSong
-    
-    .changeSong:
-      LDA currentSong
-      STA sound_param_byte_0
-      JSR play_song    
+    ;LDA currentSong
+    ;CMP #song_index_song_none
+    ;BEQ .wrapSong
+    ;
+    ;.incSong:
+    ;  INC currentSong
+    ;  JMP .changeSong
+    ;
+    ;.wrapSong:  
+    ;  LDA #$00
+    ;  STA currentSong
+    ;
+    ;.changeSong:
+    ;  LDA currentSong
+    ;  STA sound_param_byte_0
+    ;  JSR play_song    
     
   .changeMusicDone:
   

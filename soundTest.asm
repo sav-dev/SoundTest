@@ -270,14 +270,14 @@ ReadController:
 
   .include "lib\soundMapping.asm"
   .include "ggsound\ggsound.asm"  
+   
+  .bank 0
+  .org $8000
   
   SoundStart:
   .include "ggsound\sound.asm"   
   SoundEnd:
   
-  .bank 0
-  .org $8000
-    
   .bank 1
   .org $A000
 

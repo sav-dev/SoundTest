@@ -270,7 +270,10 @@ ReadController:
 
   .include "lib\soundMapping.asm"
   .include "ggsound\ggsound.asm"  
+  
+  SoundStart:
   .include "ggsound\sound.asm"   
+  SoundEnd:
   
   .bank 0
   .org $8000

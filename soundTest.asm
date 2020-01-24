@@ -30,6 +30,9 @@ c                   .rs 1
 controllerDown      .rs 1 
 controllerPressed   .rs 1 
 controllerPrevious  .rs 1 
+controller2Down      .rs 1 
+controller2Pressed   .rs 1 
+controller2Previous  .rs 1 
 sleeping            .rs 1 
 currentSong         .rs 1
   
@@ -110,7 +113,7 @@ GameLoop:
 
   JSR ReadController
  
-  .playSounds:
+  playSounds1:
 
     LDA #$01
     STA b
@@ -120,7 +123,7 @@ GameLoop:
   
     .playSoundsLoop:
       LDA controllerPressed
-      BEQ .playSoundsDone
+      BEQ playSounds1Done
       AND b
       BEQ .checkNext
       
@@ -132,20 +135,53 @@ GameLoop:
       LDA #soundeffect_one
       STA sound_param_byte_1
       JSR play_sfx
-      JMP .playSoundsDone
+      JMP playSounds1Done
       
       .checkNext:
         INC c
         ASL b
         LDA b      
-        BEQ .playSoundsDone
+        BEQ playSounds1Done
         CMP #CONTROLLER_SEL
         BNE .playSoundsLoop
         INC c        
         ASL b                 ; skip select
         JMP .playSoundsLoop
   
-  .playSoundsDone:
+  playSounds1Done:
+  
+  playSounds2:
+
+    LDA #$01
+    STA b
+    
+    LDA #$00
+    STA c
+  
+    .playSoundsLoop:
+      LDA controller2Pressed
+      BEQ playSounds2Done
+      AND b
+      BEQ .checkNext
+      
+      LDX c
+      LDA sfxMappings2, x
+      CMP #SFX_NONE
+      BEQ .checkNext
+      STA sound_param_byte_0
+      LDA #soundeffect_one
+      STA sound_param_byte_1
+      JSR play_sfx
+      JMP playSounds2Done
+      
+      .checkNext:
+        INC c
+        ASL b
+        LDA b      
+        BEQ playSounds2Done
+        JMP .playSoundsLoop
+  
+  playSounds2Done:
   
   .changeMusic:
   
@@ -258,6 +294,32 @@ ReadController:
     STA controllerDown        ; finally, store that as current state of controllers
     
   .readControllerDone:  
+  
+  .readController2:
+  
+    LDA #$01
+    STA $4017
+    LDA #$00
+    STA $4017                 ; latch buttons
+    LDX #$08                  ; read 8 buttons for player 1
+                              
+    .loop2:                    
+      LDA $4017               
+      LSR A                   
+      ROL b                   ; store the buttons in b for now
+      DEX
+      BNE .loop2
+     
+    LDA #$FF
+    EOR controller2Down        ; NOT previous state of controllers
+    AND b                     ; AND with the current state
+    STA controller2Pressed     ; store that as controllerPressed
+    LDA controller2Down        ; load previous state of controllers
+    STA controller2Previous    ; store that in controllerPrevious
+    LDA b                     ; load the placeholder
+    STA controller2Down        ; finally, store that as current state of controllers
+    
+  .readControllerDone2:  
   
   RTS
   

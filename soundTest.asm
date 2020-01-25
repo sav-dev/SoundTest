@@ -337,7 +337,7 @@ ReadController:
   .org $8000
   
   SoundStart:
-  .include "ggsound\sound.asm"   
+  .include "sound\sound.asm"   
   SoundEnd:
   
   .bank 1

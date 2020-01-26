@@ -99,6 +99,9 @@ InitializeSound:
   STA <sound_param_word_2 + $01
   JSR sound_initialize
 
+  LDA #$FF
+  STA currentSong
+  
 initPPU:
   LDA #%00000110           ; init PPU - disable sprites and background
   STA $2001                
@@ -188,23 +191,32 @@ GameLoop:
     LDA controllerPressed
     AND #CONTROLLER_SEL
     BEQ .changeMusicDone
+           
+    LDA currentSong
+    CMP #$FF
+    BEQ .wrapSong
     
-    ;LDA currentSong
-    ;CMP #song_index_song_none
-    ;BEQ .wrapSong
-    ;
-    ;.incSong:
-    ;  INC currentSong
-    ;  JMP .changeSong
-    ;
-    ;.wrapSong:  
-    ;  LDA #$00
-    ;  STA currentSong
-    ;
-    ;.changeSong:
-    ;  LDA currentSong
-    ;  STA sound_param_byte_0
-    ;  JSR play_song    
+    CMP #song_index_song_congrats
+    BEQ .turnSongOff
+    
+    .incSong:
+      INC currentSong
+      JMP .changeSong   
+    
+    .wrapSong:  
+      LDA #$00
+      STA currentSong
+    
+    .changeSong:
+      LDA currentSong
+      STA sound_param_byte_0
+      JSR play_song
+      JMP .changeMusicDone
+      
+    .turnSongOff:
+      LDA #$FF
+      STA currentSong
+      JSR pause_song
     
   .changeMusicDone:
   
